@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>混沌密文 · 中英数标点加密</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+    body {
+      background: #0b0f1a;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+      padding: 1.5rem;
+    }
+    .card {
+      max-width: 880px;
+      width: 100%;
+      background: #141b2b;
+      border-radius: 2.5rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 2px #2a3a55 inset;
+      padding: 2rem 2rem 2.5rem;
+      color: #eaeef7;
+      backdrop-filter: blur(8px);
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin: 0 0 0.5rem 0;
+      background: linear-gradient(135deg, #b8d4ff, #7b9eff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1 small {
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: #7f8ca8;
+      background: #1e2a3a;
+      padding: 0.2rem 1rem;
+      border-radius: 50px;
+      letter-spacing: 0.5px;
+    }
+    .subhead {
+      color: #8e9fb1;
+      font-size: 0.95rem;
+      border-left: 3px solid #3f5e8c;
+      padding-left: 1rem;
+      margin: 0.75rem 0 2rem 0;
+      line-height: 1.5;
+    }
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .io-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #9cb0d0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    label i {
+      font-style: normal;
+      background: #253248;
+      border-radius: 20px;
+      padding: 0.1rem 0.7rem;
+      font-size: 0.75rem;
+      color: #b4c8f0;
+    }
+    textarea {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: #0f1520;
+      border: 2px solid #253248;
+      border-radius: 2rem;
+      color: #e0e9ff;
+      font-size: 1rem;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+      font-family: 'Inter', 'SF Mono', 'Fira Code', monospace;
+      letter-spacing: 0.3px;
+    }
+    textarea:focus {
+      border-color: #5577bb;
+      box-shadow: 0 0 0 4px rgba(80, 130, 240, 0.2);
+    }
+    textarea::placeholder {
+      color: #4c5c78;
+      font-style: italic;
+    }
+    .btn-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin: 0.25rem 0 0.5rem;
+    }
+    button {
+      background: #1e2e48;
+      border: none;
+      border-radius: 3rem;
+      padding: 0.85rem 1.8rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e3ecff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 4px 0 #0b111c;
+      border: 1px solid #3c5170;
+      flex: 1 0 auto;
+      letter-spacing: 0.5px;
+    }
+    button.primary {
+      background: #2f4b7c;
+      border-color: #6c8ed4;
+      box-shadow: 0 4px 0 #14233c;
+    }
+    button.primary:hover {
+      background: #3d5f9a;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #14233c;
+    }
+    button.secondary {
+      background: #1e2a3a;
+      border-color: #40577a;
+      box-shadow: 0 4px 0 #0a0f16;
+    }
+    button.secondary:hover {
+      background: #2d3e5a;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #0a0f16;
+    }
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #0b111c;
+    }
+    button:disabled {
+      opacity: 0.5;
+      transform: translateY(0);
+      box-shadow: 0 4px 0 #0b111c;
+      pointer-events: none;
+      filter: grayscale(0.4);
+    }
+    .badge {
+      background: #1a2b3e;
+      border-radius: 100px;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.8rem;
+      color: #a4b9e0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      align-self: flex-start;
+      margin-top: 0.5rem;
+      border: 1px solid #2e4260;
+    }
+    .badge span {
+      color: #c6dcff;
+      font-weight: 600;
+    }
+    .error-message {
+      color: #ffa8a8;
+      font-size: 0.85rem;
+      min-height: 1.5rem;
+      padding-left: 0.5rem;
+    }
+    .footer-note {
+      text-align: center;
+      margin-top: 2rem;
+      color: #4e5f7c;
+      font-size: 0.75rem;
+      border-top: 1px dashed #253248;
+      padding-top: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>
+      ⚡ 混沌密文
+      <small>中英数标点</small>
+    </h1>
+    <div class="subhead">
+      简体/繁体中文、英文、数字、标点 ⇄ 看似杂乱实则系统编码的字母数字串
+    </div>
+
+    <div class="panel">
+      <!-- 输入区域 -->
+      <div class="io-group">
+        <label>
+          📥 原始文本 / 密文
+          <i>任意中英文数字标点</i>
+        </label>
+        <textarea id="inputText" rows="4" placeholder="例如：你好，世界！Hello World 2025。或粘贴要解密的混沌密文..."></textarea>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="btn-row">
+        <button class="primary" id="encryptBtn">🔒 加密 → 混沌码</button>
+        <button class="secondary" id="decryptBtn">🔓 解密 → 还原文本</button>
+        <button class="secondary" id="clearBtn" style="flex: 0.5;">✖ 清空</button>
+      </div>
+
+      <!-- 输出区域 -->
+      <div class="io-group">
+        <label>
+          📤 输出结果
+          <i id="outputHint">加密/解密结果</i>
+        </label>
+        <textarea id="outputText" rows="4" placeholder="结果会显示在这里..." readonly></textarea>
+      </div>
+
+      <!-- 状态及错误 -->
+      <div class="error-message" id="errorMsg"></div>
+
+      <!-- 小标记 -->
+      <div class="badge">
+        <span>⚙ 固定系统</span> 每个字符 → 3位十六进制 + 2位随机校验 (可逆)
+      </div>
+    </div>
+    <div class="footer-note">
+      🔁 完全可逆 · 使用确定性映射+填充 · 支持所有Unicode字符（包括简繁、标点、数字、字母）
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // ----- 核心编码系统 -----
+      // 每个字符转成 Unicode 码点 (0 ~ 0x10FFFF)
+      // 为了避免过于简单，采用固定系统:
+      // 每个字符 → 8位十六进制 (填充到6位) + 2位校验码? 
+      // 但题目希望 "一堆看似杂乱无章的字母或数字" 且固定系统且支持所有字符。
+      // 设计: 对每个字符的码点 用固定公式转成 "x" + 十六进制码点(6位) + 2位校验码(基于码点计算) 
+      // 这样总长度9个字符? 但看起来有字母数字混合。
+      // 但为了更有"杂乱感"且保证可逆, 采用: 每个字符 → 4位随机字母 + 3位十六进制 + 2位校验? 不, 随机不可逆。
+      // 要可逆且固定系统，不能真随机。
+      // 于是采用: 每个字符的 Unicode 码点 转成 8位十六进制(不足补0) + 2位基于码点的校验和(十六进制) = 10个字符。
+      // 但为了更像"杂乱无章", 让每个码点先做一个固定的位混淆(但不影响可逆) 再转十六进制。
+      // 我们采用一种固定置换: 码点 ^ 0x5A5A (异或常量) 然后转十六进制8位 (码点最大0x10FFFF, 异或后不超过0x10FFFF, 8位够)
+      // 再额外加2位校验码 (基于原码点的简单函数) 为了让密文更长且更杂, 但校验位也是固定的, 不破坏可逆。
+      // 但解密时需要移除校验位并反异或。为了更"杂乱", 把异或后的8位十六进制每个字符再映射成字母/数字? 
+      // 不, 继续用十六进制, 但用大小写混合加数字看起来就像杂乱字母数字。但注意大小写敏感, 容易混淆, 因此改为统一大写或小写? 
+      // 但为了视觉杂乱, 可以让数字和字母混合: 十六进制本身就有0-9,A-F, 看起来像字母数字混合。
+      // 再增加2位随机? 但随机不可逆。所以改为: 每个字符 → 8位十六进制码点异或后 + 2位基于此异或值的校验码(也是十六进制) = 10位。
+      // 然后整个密文块之间可以用分隔符? 但为了更像"一堆杂乱", 不添加额外分隔符, 因为每个块固定10位字符, 解密时每10位分割。
+      // 但Unicode代理对? JS中字符串按UTF-16码元, 对于超出BMP的字符(如emoji)是两个码元, 我们按码元处理会导致无法还原？实际上可以按码元处理，每个码元作为一个"字符"处理，加密解密都按码元，所以没问题。
+      // 但用户输入"𠮷"等增补字符时，JS会当成两个码元，每个码元单独加密，解密后两个码元拼回去一样可以还原。所以完美支持所有UTF-16字符串。
+      // 但中文简繁体都在BMP内，所以都是单个码元。
+      // 每个码元: 16位(0~65535) → 8位十六进制(4位十六进制? 0xFFFF是4位十六进制, 但为了统一用8位补零) 
+      // 实际0xFFFF → "0000FFFF", 8位。 异或0x5A5A后范围仍0~0xFFFF, 仍是8位十六进制 (因为0xFFFF ^ 0x5A5A = 0xA5A5 等) 
+      // 然后生成2位校验: (code ^ 0xABCD) & 0xFF 转十六进制两位。总共10位。
+      // 解密: 每10位一组, 取前8位转成数字, 异或0x5A5A得到原始码元, 后2位校验(可选验证), 然后fromCharCode。
+      // 为了更杂乱, 我们把十六进制字符中的字母随机大小写? 但大小写会导致解密时需统一, 可以解密时统一转大写。但那样会损失"杂乱感"且容易混淆。
+      // 或者采用Base36? 但十六进制已经够。
+      // 为了更像"杂乱无章", 我们可以在加密时将码点先进行一个简单的线性变换: (code * 37 + 17) & 0xFFFF, 但乘法可能导致冲突? 因为是模65536且37与65536互质，所以可逆。这个更好，看起来更不像直接十六进制。
+      // 但解密需要求逆: 先减17再乘37的模逆。模逆存在因为gcd(37,65536)=1。37的模逆? 37*? ≡1 mod 65536。可计算。
+      // 但为了简洁且保证可逆，使用异或足够，而且十六进制字符0-9A-F本身就像字母数字混合。
+      // 我们就用异或0x5A5A, 然后转为8位十六进制(大写)，再加2位校验: 基于原码点异或0xABCD的低8位。
+      // 这样每个字符加密后长度为10个字符 (8+2)，且只包含0-9A-F，看起来像杂乱的字母数字。
+      // 但全是A-F和数字，稍微有点规律，但每组10位，整体很杂乱。
+      // 还嫌不够杂乱? 可以加一个固定的置换表将十六进制字符映射到字母数字? 但为了简单还是保持。
+      // 另外为了更像"密文"，可以考虑在两组之间插入随机分隔符？不行，那样不可逆。
+      // 最终决定: 每个字符变成10位十六进制字符串（大写），最后整体密文不加分隔。解密时每10位还原。
+      
+      // 校验和的计算: 为了增加复杂度，使用原码元与0xABCD异或后 & 0xFF，转两位十六进制。
+      // 但验证校验可以防止解密错误，但解密时我们直接还原，不强制验证(可选)。
+      
+      // 加密函数
+      function encryptChar(code) {
+        // 原码元 0~65535
+        const xorVal = 0x5A5A;
+        const obfuscated = (code ^ xorVal) & 0xFFFF; // 仍16位
+        // 转为8位十六进制(补零)
+        let hex8 = obfuscated.toString(16).toUpperCase().padStart(8, '0');
+        // 校验码: (code ^ 0xABCD) & 0xFF 的两位十六进制
+        const check = ((code ^ 0xABCD) & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+        return hex8 + check; // 10位
+      }
+
+      // 解密单个块: 输入10位字符串, 返回码元数字(整数), 如果无效返回NaN
+      function decryptBlock(block) {
+        if (block.length !== 10) return NaN;
+        // 检查是否都是十六进制字符
+        const hexPart = block.slice(0, 8);
+        const checkPart = block.slice(8, 10);
+        // 验证是否十六进制
+        const hexRegex = /^[0-9A-Fa-f]{8}$/;
+        const checkRegex = /^[0-9A-Fa-f]{2}$/;
+        if (!hexRegex.test(hexPart) || !checkRegex.test(checkPart)) return NaN;
+        
+        // 转数字
+        const obfuscated = parseInt(hexPart, 16);
+        // 反异或得到原码元
+        const xorVal = 0x5A5A;
+        const code = (obfuscated ^ xorVal) & 0xFFFF; // 确保16位
+        
+        // 验证校验码 (可选, 确保密文未损坏)
+        const expectedCheck = ((code ^ 0xABCD) & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+        if (checkPart.toUpperCase() !== expectedCheck) {
+          // 校验失败，但不一定完全失败，可能用户输入了错误的密文。返回NaN表示错误。
+          return NaN;
+        }
+        return code;
+      }
+
+      // 加密完整字符串
+      function encryptText(text) {
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+          const code = text.charCodeAt(i); // UTF-16码元
+          result += encryptChar(code);
+        }
+        return result;
+      }
+
+      // 解密完整字符串
+      function decryptText(encrypted) {
+        // 移除所有空白字符? 不应该移除，因为密文中可能包含空格吗? 密文只包含0-9A-F，不会包含空格。但用户可能不小心输入空格，我们保留非十六进制字符? 但为了鲁棒，我们只保留十六进制字符。
+        // 但可能会破坏结构，所以我们采用严格方式：先把输入字符串中的空白字符移除？但有可能用户想包含空格作为密文一部分? 但密文本身不会产生空格，所以移除空格安全。
+        // 更好的: 我们假设用户输入的密文只包含0-9A-F大写或小写，可能夹杂空格？我们去除所有非十六进制字符。
+        // 但去除会破坏长度，如果用户输入的密文实际上应该全部是十六进制字符，我们只需去除空白字符？为了容错，去除空格、换行、制表符。
+        // 但考虑复制粘贴可能带换行，我们移除所有空白字符。
+        const cleaned = encrypted.replace(/\s+/g, '').toUpperCase(); // 统一大写
+        // 检查长度是否为10的倍数
+        if (cleaned.length % 10 !== 0) {
+          // 可能是长度不对，但仍然尝试尽可能解密？
+          // 但为了正确性，抛出错误提示。
+          throw new Error('密文长度无效 (应为10的倍数)');
+        }
+        let result = '';
+        for (let i = 0; i < cleaned.length; i += 10) {
+          const block = cleaned.slice(i, i + 10);
+          const code = decryptBlock(block);
+          if (isNaN(code)) {
+            throw new Error(`无法解密片段: ${block}`);
+          }
+          result += String.fromCharCode(code);
+        }
+        return result;
+      }
+
+      // ----- DOM 元素 -----
+      const inputText = document.getElementById('inputText');
+      const outputText = document.getElementById('outputText');
+      const encryptBtn = document.getElementById('encryptBtn');
+      const decryptBtn = document.getElementById('decryptBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const errorMsg = document.getElementById('errorMsg');
+      const outputHint = document.getElementById('outputHint');
+
+      // 清除错误信息
+      function clearError() {
+        errorMsg.textContent = '';
+      }
+
+      // 显示错误
+      function showError(msg) {
+        errorMsg.textContent = msg;
+      }
+
+      // 加密操作
+      function handleEncrypt() {
+        clearError();
+        const input = inputText.value;
+        if (input.length === 0) {
+          showError('请输入要加密的文本');
+          outputText.value = '';
+          outputHint.textContent = '加密结果';
+          return;
+        }
+        try {
+          const encrypted = encryptText(input);
+          outputText.value = encrypted;
+          outputHint.textContent = '加密结果 · 每10位对应一个字符';
+        } catch (e) {
+          showError('加密失败: ' + e.message);
+        }
+      }
+
+      // 解密操作
+      function handleDecrypt() {
+        clearError();
+        const input = inputText.value.trim();
+        if (input.length === 0) {
+          showError('请输入要解密的密文');
+          outputText.value = '';
+          outputHint.textContent = '解密结果';
+          return;
+        }
+        // 去除可能存在的空格和换行用于解密，但保留原输入用于显示
+        try {
+          const decrypted = decryptText(input);
+          outputText.value = decrypted;
+          outputHint.textContent = '解密结果 · 原文已还原';
+        } catch (e) {
+          showError('解密失败: ' + e.message);
+        }
+      }
+
+      // 清空
+      function handleClear() {
+        inputText.value = '';
+        outputText.value = '';
+        clearError();
+        outputHint.textContent = '加密/解密结果';
+        inputText.focus();
+      }
+
+      // 绑定事件
+      encryptBtn.addEventListener('click', handleEncrypt);
+      decryptBtn.addEventListener('click', handleDecrypt);
+      clearBtn.addEventListener('click', handleClear);
+
+      // 额外: 输入框内按Ctrl+Enter快捷加密, 方便
+      inputText.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          handleEncrypt();
+        }
+      });
+
+      // 初始化一些示例，但为了不干扰用户，不自动填充，但可以让输入框获得焦点
+      inputText.focus();
+
+      // 测试自检(仅开发模式，可在控制台打印)
+      // 验证可逆性
+      (function selfTest() {
+        const testStr = 'Hello 世界！123。繁體字𠮷'; // 包含增补字符
+        try {
+          const enc = encryptText(testStr);
+          const dec = decryptText(enc);
+          if (dec !== testStr) {
+            console.warn('自检失败: 还原文本不一致');
+          } else {
+            console.log('✅ 自检通过: 加密/解密可逆', enc.length);
+          }
+        } catch (e) {
+          console.warn('自检错误:', e);
+        }
+      })();
+
+    })();
+  </script>
+</body>
+</html>
