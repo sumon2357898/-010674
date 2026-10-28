@@ -108,6 +108,32 @@
       color: #4c5c78;
       font-style: italic;
     }
+    .channel-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    select {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: #0f1520;
+      border: 2px solid #253248;
+      border-radius: 2rem;
+      color: #e0e9ff;
+      font-size: 1rem;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus {
+      border-color: #5577bb;
+      box-shadow: 0 0 0 4px rgba(80, 130, 240, 0.2);
+    }
+    .channel-hint {
+      color: #8e9fb1;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      padding-left: 0.5rem;
+    }
     .btn-row {
       display: flex;
       gap: 1rem;
@@ -217,6 +243,16 @@
         <textarea id="inputText" rows="4" placeholder="例如：你好，世界！Hello World 2025。或粘贴要解密的混沌密文..."></textarea>
       </div>
 
+      <!-- 频道选择 -->
+      <div class="channel-group">
+        <label>
+          📻 频道
+          <i>1 - 100 · 每频道逻辑不同</i>
+        </label>
+        <select id="channelSelect" aria-label="选择频道"></select>
+        <div class="channel-hint">加密和解密必须使用同一个频道，频道不对将无法还原。用旧版（无频道）加密的密文，请选频道 1 解密。</div>
+      </div>
+
       <!-- 操作按钮 -->
       <div class="btn-row">
         <button class="primary" id="encryptBtn">🔒 加密 → 混沌码</button>
@@ -238,11 +274,11 @@
 
       <!-- 小标记 -->
       <div class="badge">
-        <span>⚙ 固定系统</span> 每个字符 → 3位十六进制 + 2位随机校验 (可逆)
+        <span>⚙ 频道系统</span> 100 个频道 · 每个频道转换参数都不同 · 每个字符 → 8位十六进制 + 2位校验 (可逆)
       </div>
     </div>
     <div class="footer-note">
-      🔁 完全可逆 · 使用确定性映射+填充 · 支持所有Unicode字符（包括简繁、标点、数字、字母）
+      🔁 完全可逆 · 同频道加解密 · 频道 1 兼容旧版密文 · 支持所有Unicode字符（包括简繁、标点、数字、字母）
     </div>
   </div>
 
@@ -288,56 +324,95 @@
       // 校验和的计算: 为了增加复杂度，使用原码元与0xABCD异或后 & 0xFF，转两位十六进制。
       // 但验证校验可以防止解密错误，但解密时我们直接还原，不强制验证(可选)。
       
-      // 加密函数
-      function encryptChar(code) {
-        // 原码元 0~65535
-        const xorVal = 0x5A5A;
-        const obfuscated = (code ^ xorVal) & 0xFFFF; // 仍16位
-        // 转为8位十六进制(补零)
+      // ----- 频道系统 -----
+      // 频道 1-100，每个频道都有一套不同的转换参数:
+      //   xorVal(异或值) / mul(乘数,奇数,模65536可逆) / add(加数) / checkVal(校验常量)
+      // 加密: 先异或，再做仿射变换 obfuscated = ((code ^ xorVal) * mul + add) mod 65536
+      // 解密: 先做仿射逆变换，再异或，并用该频道的校验常量验证，频道不对校验就会失败。
+      // 频道 1 特意保留旧版参数 (mul=1, add=0, xor=0x5A5A, check=0xABCD)，
+      // 因此旧版无频道时加密出的密文，用频道 1 可以直接解密。
+      function modInverseOdd(a) {
+        // 求奇数 a 在模 65536 下的乘法逆元 (扩展欧几里得)
+        let t = 0, newT = 1, r = 65536, newR = a % 65536;
+        while (newR !== 0) {
+          const q = Math.floor(r / newR);
+          const tmpT = t - q * newT; t = newT; newT = tmpT;
+          const tmpR = r - q * newR; r = newR; newR = tmpR;
+        }
+        if (t < 0) t += 65536;
+        return t;
+      }
+
+      function getChannelParams(channel) {
+        const ch = Math.min(100, Math.max(1, parseInt(channel, 10) || 1));
+        if (ch === 1) {
+          return { channel: 1, xorVal: 0x5A5A, mul: 1, add: 0, checkVal: 0xABCD, invMul: 1 };
+        }
+        // 用频道号做种子，确定性地生成该频道专属参数 (同一频道每次都相同)
+        let s = (ch * 2654435761) >>> 0;
+        function nextRand() {
+          // xorshift32
+          s ^= (s << 13) >>> 0; s >>>= 0;
+          s ^= s >> 17;
+          s ^= (s << 5) >>> 0; s >>>= 0;
+          return s >>> 0;
+        }
+        const xorVal = nextRand() & 0xFFFF;
+        let mul = nextRand() & 0xFFFF;
+        mul = (mul | 1) & 0xFFFF; // 强制奇数，保证模 65536 可逆
+        if (mul === 1) mul = 0x9E37; // 避免与频道 1 退化成同一逻辑
+        const add = nextRand() & 0xFFFF;
+        const checkVal = nextRand() & 0xFFFF;
+        return { channel: ch, xorVal, mul, add, checkVal, invMul: modInverseOdd(mul) };
+      }
+
+      // 加密函数 (按所选频道)
+      function encryptChar(code, params) {
+        const temp = (code ^ params.xorVal) & 0xFFFF;
+        const obfuscated = (temp * params.mul + params.add) & 0xFFFF;
         let hex8 = obfuscated.toString(16).toUpperCase().padStart(8, '0');
-        // 校验码: (code ^ 0xABCD) & 0xFF 的两位十六进制
-        const check = ((code ^ 0xABCD) & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+        const check = ((code ^ params.checkVal) & 0xFF).toString(16).toUpperCase().padStart(2, '0');
         return hex8 + check; // 10位
       }
 
       // 解密单个块: 输入10位字符串, 返回码元数字(整数), 如果无效返回NaN
-      function decryptBlock(block) {
+      function decryptBlock(block, params) {
         if (block.length !== 10) return NaN;
-        // 检查是否都是十六进制字符
         const hexPart = block.slice(0, 8);
         const checkPart = block.slice(8, 10);
-        // 验证是否十六进制
         const hexRegex = /^[0-9A-Fa-f]{8}$/;
         const checkRegex = /^[0-9A-Fa-f]{2}$/;
         if (!hexRegex.test(hexPart) || !checkRegex.test(checkPart)) return NaN;
-        
-        // 转数字
+
         const obfuscated = parseInt(hexPart, 16);
-        // 反异或得到原码元
-        const xorVal = 0x5A5A;
-        const code = (obfuscated ^ xorVal) & 0xFFFF; // 确保16位
-        
-        // 验证校验码 (可选, 确保密文未损坏)
-        const expectedCheck = ((code ^ 0xABCD) & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+        // 仿射逆变换: temp = (obfuscated - add) * invMul mod 65536
+        let diff = (obfuscated - params.add) % 65536;
+        if (diff < 0) diff += 65536;
+        const temp = (diff * params.invMul) & 0xFFFF;
+        const code = (temp ^ params.xorVal) & 0xFFFF;
+
+        // 用该频道的校验常量验证，频道不对时这里会失败
+        const expectedCheck = ((code ^ params.checkVal) & 0xFF).toString(16).toUpperCase().padStart(2, '0');
         if (checkPart.toUpperCase() !== expectedCheck) {
-          // 校验失败，但不一定完全失败，可能用户输入了错误的密文。返回NaN表示错误。
           return NaN;
         }
         return code;
       }
 
-      // 加密完整字符串
-      function encryptText(text) {
+      // 加密完整字符串 (按所选频道)
+      function encryptText(text, channel) {
+        const params = getChannelParams(channel);
         let result = '';
         for (let i = 0; i < text.length; i++) {
           const code = text.charCodeAt(i); // UTF-16码元
-          result += encryptChar(code);
+          result += encryptChar(code, params);
         }
         return result;
       }
 
-      // 解密完整字符串
-      function decryptText(encrypted) {
+      // 解密完整字符串 (按所选频道，频道不对会校验失败)
+      function decryptText(encrypted, channel) {
+        const params = getChannelParams(channel);
         // 移除所有空白字符? 不应该移除，因为密文中可能包含空格吗? 密文只包含0-9A-F，不会包含空格。但用户可能不小心输入空格，我们保留非十六进制字符? 但为了鲁棒，我们只保留十六进制字符。
         // 但可能会破坏结构，所以我们采用严格方式：先把输入字符串中的空白字符移除？但有可能用户想包含空格作为密文一部分? 但密文本身不会产生空格，所以移除空格安全。
         // 更好的: 我们假设用户输入的密文只包含0-9A-F大写或小写，可能夹杂空格？我们去除所有非十六进制字符。
@@ -353,9 +428,9 @@
         let result = '';
         for (let i = 0; i < cleaned.length; i += 10) {
           const block = cleaned.slice(i, i + 10);
-          const code = decryptBlock(block);
+          const code = decryptBlock(block, params);
           if (isNaN(code)) {
-            throw new Error(`无法解密片段: ${block}`);
+            throw new Error(`无法解密片段: ${block}（请确认频道是否正确，当前为频道 ${params.channel}，或密文是否完整）`);
           }
           result += String.fromCharCode(code);
         }
@@ -370,6 +445,20 @@
       const clearBtn = document.getElementById('clearBtn');
       const errorMsg = document.getElementById('errorMsg');
       const outputHint = document.getElementById('outputHint');
+      const channelSelect = document.getElementById('channelSelect');
+
+      // 填充频道选项 1-100，默认频道 1 (兼容旧版密文)
+      for (let i = 1; i <= 100; i++) {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = i === 1 ? '频道 1（兼容旧版）' : `频道 ${i}`;
+        channelSelect.appendChild(opt);
+      }
+      channelSelect.value = '1';
+
+      function getSelectedChannel() {
+        return Math.min(100, Math.max(1, parseInt(channelSelect.value, 10) || 1));
+      }
 
       // 清除错误信息
       function clearError() {
@@ -392,9 +481,10 @@
           return;
         }
         try {
-          const encrypted = encryptText(input);
+          const channel = getSelectedChannel();
+          const encrypted = encryptText(input, channel);
           outputText.value = encrypted;
-          outputHint.textContent = '加密结果 · 每10位对应一个字符';
+          outputHint.textContent = `加密结果 · 频道 ${channel} · 每10位对应一个字符 · 解密时请选择同一频道`;
         } catch (e) {
           showError('加密失败: ' + e.message);
         }
@@ -412,9 +502,10 @@
         }
         // 去除可能存在的空格和换行用于解密，但保留原输入用于显示
         try {
-          const decrypted = decryptText(input);
+          const channel = getSelectedChannel();
+          const decrypted = decryptText(input, channel);
           outputText.value = decrypted;
-          outputHint.textContent = '解密结果 · 原文已还原';
+          outputHint.textContent = `解密结果 · 频道 ${channel} · 原文已还原`;
         } catch (e) {
           showError('解密失败: ' + e.message);
         }
@@ -450,13 +541,21 @@
       (function selfTest() {
         const testStr = 'Hello 世界！123。繁體字𠮷'; // 包含增补字符
         try {
-          const enc = encryptText(testStr);
-          const dec = decryptText(enc);
-          if (dec !== testStr) {
-            console.warn('自检失败: 还原文本不一致');
-          } else {
-            console.log('✅ 自检通过: 加密/解密可逆', enc.length);
+          // 全部 100 个频道都要能往返还原
+          for (let ch = 1; ch <= 100; ch++) {
+            const enc = encryptText(testStr, ch);
+            const dec = decryptText(enc, ch);
+            if (dec !== testStr) {
+              console.warn(`自检失败: 频道 ${ch} 还原文本不一致`);
+              return;
+            }
           }
+          // 频道 1 必须与旧版算法一致: 'A' → 00005A1B8C
+          if (encryptText('A', 1) !== '00005A1B8C') {
+            console.warn('自检失败: 频道 1 与旧版不兼容');
+            return;
+          }
+          console.log('✅ 自检通过: 100个频道加密/解密均可逆，频道1兼容旧版');
         } catch (e) {
           console.warn('自检错误:', e);
         }
