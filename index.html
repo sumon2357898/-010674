@@ -5,252 +5,244 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>混沌密文 · 中英数标点加密</title>
   <style>
+    :root {
+      --bg: #070a12;
+      --card: rgba(20, 27, 43, 0.88);
+      --line: rgba(148, 180, 255, 0.14);
+      --text: #eef3ff;
+      --muted: #8e9cb8;
+      --accent: #5b8cff;
+      --accent-2: #8b5cf6;
+      --field: rgba(7, 11, 20, 0.65);
+    }
     * {
       box-sizing: border-box;
       font-family: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
     }
     body {
-      background: #0b0f1a;
+      background:
+        radial-gradient(720px 420px at 12% -8%, rgba(91, 140, 255, 0.22), transparent 60%),
+        radial-gradient(680px 420px at 105% 110%, rgba(139, 92, 246, 0.18), transparent 60%),
+        var(--bg);
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       margin: 0;
-      padding: 1.5rem;
+      padding: 1.5rem 1rem;
+      color: var(--text);
     }
     .card {
-      max-width: 880px;
+      max-width: 860px;
       width: 100%;
-      background: #141b2b;
-      border-radius: 2.5rem;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 2px #2a3a55 inset;
-      padding: 2rem 2rem 2.5rem;
-      color: #eaeef7;
-      backdrop-filter: blur(8px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0) 42%), var(--card);
+      border: 1px solid var(--line);
+      border-radius: 1.75rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+      padding: clamp(1.25rem, 4vw, 2.25rem);
+      backdrop-filter: blur(10px);
     }
-    h1 {
-      font-size: 2rem;
-      font-weight: 600;
-      letter-spacing: 1px;
-      margin: 0 0 0.5rem 0;
-      background: linear-gradient(135deg, #b8d4ff, #7b9eff);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+    .header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 0.9rem;
+      margin-bottom: 1.75rem;
     }
-    h1 small {
-      font-size: 0.9rem;
-      font-weight: 400;
-      color: #7f8ca8;
-      background: #1e2a3a;
-      padding: 0.2rem 1rem;
-      border-radius: 50px;
-      letter-spacing: 0.5px;
+    .logo {
+      width: 52px;
+      height: 52px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      font-size: 1.55rem;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 10px 24px rgba(91, 140, 255, 0.35);
     }
-    .subhead {
-      color: #8e9fb1;
-      font-size: 0.95rem;
-      border-left: 3px solid #3f5e8c;
-      padding-left: 1rem;
-      margin: 0.75rem 0 2rem 0;
-      line-height: 1.5;
+    h1 {
+      font-size: clamp(1.55rem, 4vw, 1.9rem);
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin: 0;
+      line-height: 1.15;
+    }
+    .tag {
+      margin-top: 0.3rem;
+      font-size: 0.68rem;
+      letter-spacing: 3.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .pill {
+      margin-left: auto;
+      flex: 0 0 auto;
+      font-size: 0.78rem;
+      color: #bcd0ff;
+      background: rgba(91, 140, 255, 0.10);
+      border: 1px solid rgba(148, 180, 255, 0.22);
+      padding: 0.38rem 0.85rem;
+      border-radius: 999px;
     }
     .panel {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1.15rem;
     }
-    .io-group {
+    .io-group, .channel-group {
       display: flex;
       flex-direction: column;
-      gap: 0.8rem;
+      gap: 0.6rem;
+    }
+    .channel-group {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.9rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--line);
+      border-radius: 1.1rem;
+      padding: 0.8rem 1rem;
+    }
+    .channel-group label {
+      white-space: nowrap;
+    }
+    .channel-group select {
+      flex: 1;
     }
     label {
       font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #9cb0d0;
+      letter-spacing: 0.5px;
+      color: #a9bad6;
       display: flex;
       align-items: center;
       gap: 8px;
     }
     label i {
       font-style: normal;
-      background: #253248;
-      border-radius: 20px;
-      padding: 0.1rem 0.7rem;
-      font-size: 0.75rem;
-      color: #b4c8f0;
+      background: rgba(91, 140, 255, 0.12);
+      border-radius: 999px;
+      padding: 0.12rem 0.65rem;
+      font-size: 0.72rem;
+      color: #a9c2ff;
+    }
+    textarea, select {
+      width: 100%;
+      padding: 0.9rem 1.05rem;
+      background: var(--field);
+      border: 1px solid rgba(148, 180, 255, 0.16);
+      border-radius: 1.05rem;
+      color: #e6eeff;
+      font-size: 0.98rem;
+      line-height: 1.6;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     textarea {
-      width: 100%;
-      padding: 1rem 1.25rem;
-      background: #0f1520;
-      border: 2px solid #253248;
-      border-radius: 2rem;
-      color: #e0e9ff;
-      font-size: 1rem;
-      line-height: 1.6;
       resize: vertical;
-      outline: none;
-      transition: border 0.2s, box-shadow 0.2s;
-      font-family: 'Inter', 'SF Mono', 'Fira Code', monospace;
+      font-family: ui-monospace, 'SF Mono', 'Fira Code', monospace;
       letter-spacing: 0.3px;
     }
-    textarea:focus {
-      border-color: #5577bb;
-      box-shadow: 0 0 0 4px rgba(80, 130, 240, 0.2);
-    }
-    textarea::placeholder {
-      color: #4c5c78;
-      font-style: italic;
-    }
-    .channel-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
+    textarea[readonly] {
+      color: #c9dcff;
+      background: rgba(10, 16, 28, 0.85);
     }
     select {
-      width: 100%;
-      padding: 1rem 1.25rem;
-      background: #0f1520;
-      border: 2px solid #253248;
-      border-radius: 2rem;
-      color: #e0e9ff;
-      font-size: 1rem;
-      outline: none;
       cursor: pointer;
+      width: auto;
     }
-    select:focus {
-      border-color: #5577bb;
-      box-shadow: 0 0 0 4px rgba(80, 130, 240, 0.2);
+    textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(91, 140, 255, 0.18);
     }
-    .channel-hint {
-      color: #8e9fb1;
-      font-size: 0.85rem;
-      line-height: 1.5;
-      padding-left: 0.5rem;
+    textarea::placeholder {
+      color: #55637d;
     }
     .btn-row {
       display: flex;
-      gap: 1rem;
+      gap: 0.65rem;
       flex-wrap: wrap;
-      margin: 0.25rem 0 0.5rem;
     }
     button {
-      background: #1e2e48;
-      border: none;
-      border-radius: 3rem;
-      padding: 0.85rem 1.8rem;
-      font-size: 1rem;
+      border: 1px solid transparent;
+      border-radius: 0.95rem;
+      padding: 0.85rem 1.5rem;
+      font-size: 0.98rem;
       font-weight: 600;
-      color: #e3ecff;
+      color: var(--text);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       cursor: pointer;
-      transition: all 0.15s;
-      box-shadow: 0 4px 0 #0b111c;
-      border: 1px solid #3c5170;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
       flex: 1 0 auto;
       letter-spacing: 0.5px;
     }
     button.primary {
-      background: #2f4b7c;
-      border-color: #6c8ed4;
-      box-shadow: 0 4px 0 #14233c;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 10px 22px rgba(91, 140, 255, 0.28);
     }
     button.primary:hover {
-      background: #3d5f9a;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 0 #14233c;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(91, 140, 255, 0.32);
     }
     button.secondary {
-      background: #1e2a3a;
-      border-color: #40577a;
-      box-shadow: 0 4px 0 #0a0f16;
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(148, 180, 255, 0.20);
+      color: #dbe7ff;
     }
     button.secondary:hover {
-      background: #2d3e5a;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 0 #0a0f16;
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
     }
     button:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #0b111c;
+      transform: translateY(1px);
+      box-shadow: none;
     }
     button:disabled {
       opacity: 0.5;
-      transform: translateY(0);
-      box-shadow: 0 4px 0 #0b111c;
       pointer-events: none;
-      filter: grayscale(0.4);
-    }
-    .badge {
-      background: #1a2b3e;
-      border-radius: 100px;
-      padding: 0.4rem 1.2rem;
-      font-size: 0.8rem;
-      color: #a4b9e0;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      align-self: flex-start;
-      margin-top: 0.5rem;
-      border: 1px solid #2e4260;
-    }
-    .badge span {
-      color: #c6dcff;
-      font-weight: 600;
     }
     .error-message {
-      color: #ffa8a8;
+      color: #ff9d9d;
       font-size: 0.85rem;
-      min-height: 1.5rem;
-      padding-left: 0.5rem;
+      min-height: 1.25rem;
+      padding-left: 0.25rem;
     }
-    .footer-note {
-      text-align: center;
-      margin-top: 2rem;
-      color: #4e5f7c;
-      font-size: 0.75rem;
-      border-top: 1px dashed #253248;
-      padding-top: 1.2rem;
+    .error-message:empty {
+      min-height: 0;
+    }
+    @media (max-width: 560px) {
+      body { padding: 0.75rem; }
+      .card { border-radius: 1.35rem; }
+      .pill { display: none; }
+      .channel-group { flex-direction: column; align-items: stretch; }
+      .channel-group select { width: 100%; }
+      .btn-row button { flex: 1 1 9rem; }
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>
-      ⚡ 混沌密文
-      <small>中英数标点</small>
-    </h1>
-    <div class="subhead">
-      简体/繁体中文、英文、数字、标点 ⇄ 看似杂乱实则系统编码的字母数字串
+    <div class="header">
+      <div class="logo">⚡</div>
+      <div>
+        <h1>混沌密文</h1>
+        <div class="tag">Chaos Cipher</div>
+      </div>
+      <span class="pill">中英数标点</span>
     </div>
 
     <div class="panel">
       <!-- 输入区域 -->
       <div class="io-group">
-        <label>
-          📥 原始文本 / 密文
-          <i>任意中英文数字标点</i>
-        </label>
-        <textarea id="inputText" rows="4" placeholder="例如：你好，世界！Hello World 2025。或粘贴要解密的混沌密文..."></textarea>
+        <label>📥 原始文本 / 密文</label>
+        <textarea id="inputText" rows="4" placeholder="输入文本，或粘贴密文…"></textarea>
       </div>
 
       <!-- 频道选择 -->
       <div class="channel-group">
-        <label>
-          📻 频道
-          <i>1 - 100 · 每频道逻辑不同</i>
-        </label>
+        <label>📻 频道 <i>1–100</i></label>
         <select id="channelSelect" aria-label="选择频道"></select>
-        <div class="channel-hint">加密和解密必须使用同一个频道，频道不对将无法还原。用旧版（无频道）加密的密文，请选频道 1 解密。</div>
       </div>
 
       <!-- 操作按钮 -->
@@ -272,13 +264,6 @@
       <!-- 状态及错误 -->
       <div class="error-message" id="errorMsg"></div>
 
-      <!-- 小标记 -->
-      <div class="badge">
-        <span>⚙ 频道系统</span> 100 个频道 · 每个频道转换参数都不同 · 每个字符 → 8位十六进制 + 2位校验 (可逆)
-      </div>
-    </div>
-    <div class="footer-note">
-      🔁 完全可逆 · 同频道加解密 · 频道 1 兼容旧版密文 · 支持所有Unicode字符（包括简繁、标点、数字、字母）
     </div>
   </div>
 
